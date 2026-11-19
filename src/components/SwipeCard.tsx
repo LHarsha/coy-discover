@@ -29,8 +29,7 @@ export function SwipeCard({ profile, isTop, onSwiped, ref }: Props) {
   const flyOut = (action: SwipeAction, velocity = 0) => {
     if (leaving.current) return;
     leaving.current = true;
-    const width = typeof window === "undefined" ? 500 : window.innerWidth;
-    const target = (action === "like" ? 1 : -1) * (width + 200);
+    const target = (action === "like" ? 1 : -1) * (window.innerWidth + 200);
     animate(x, target, {
       type: "tween",
       ease: "easeOut",

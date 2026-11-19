@@ -1,11 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { NextRequest } from "next/server";
 import { SEED_PROFILES } from "@/lib/seed";
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "coy-api-"));
+// Set before the routes are imported so the shared client opens a throwaway database.
+const dir = fs.mkdtempSync(path.join(inject("tmpRoot"), "api-"));
 process.env.DATABASE_URL = `file:${path.join(dir, "api.db")}`;
 
 const feedRoute = await import("@/app/api/feed/route");
@@ -38,11 +38,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   (await getDb()).close();
-  try {
-    fs.rmSync(dir, { recursive: true, force: true });
-  } catch {
-    // Windows can hold the SQLite file briefly after close; a leftover temp dir is harmless.
-  }
 });
 
 describe("HTTP API", () => {

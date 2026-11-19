@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, inject, it } from "vitest";
 import type { Client } from "@libsql/client";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { openDb, resetDemo } from "@/lib/db";
 import { DiscoverError, getFeed, getMatches, parseSwipeInput, recordSwipe } from "@/lib/discover";
@@ -12,13 +11,6 @@ const nonLikers = SEED_PROFILES.filter((p) => !p.likesCurrentUser).map((p) => p.
 const PUBLIC_KEYS = ["age", "bio", "id", "interests", "location", "name", "photoUrl"];
 
 let db: Client;
-
-// Windows can hold the SQLite file briefly after close; leftover temp dirs are harmless.
-function removeDir(dir: string) {
-  try {
-    fs.rmSync(dir, { recursive: true, force: true });
-  } catch {}
-}
 
 beforeEach(async () => {
   db = await openDb(":memory:");
@@ -171,23 +163,20 @@ describe("parseSwipeInput", () => {
 
 describe("persistence and reset", () => {
   it("keeps swipes and matches across connections to the same database file", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "coy-"));
+    const dir = fs.mkdtempSync(path.join(inject("tmpRoot"), "persist-"));
     const url = `file:${path.join(dir, "test.db")}`;
-    try {
-      const first = await openDb(url);
-      await recordSwipe(first, ME, likers[0], "like");
-      await recordSwipe(first, ME, nonLikers[0], "pass");
-      first.close();
 
-      const second = await openDb(url);
-      expect((await getMatches(second, ME)).map((m) => m.profile.id)).toEqual([likers[0]]);
-      const ids = (await getFeed(second, ME)).map((p) => p.id);
-      expect(ids).not.toContain(likers[0]);
-      expect(ids).not.toContain(nonLikers[0]);
-      second.close();
-    } finally {
-      removeDir(dir);
-    }
+    const first = await openDb(url);
+    await recordSwipe(first, ME, likers[0], "like");
+    await recordSwipe(first, ME, nonLikers[0], "pass");
+    first.close();
+
+    const second = await openDb(url);
+    expect((await getMatches(second, ME)).map((m) => m.profile.id)).toEqual([likers[0]]);
+    const ids = (await getFeed(second, ME)).map((p) => p.id);
+    expect(ids).not.toContain(likers[0]);
+    expect(ids).not.toContain(nonLikers[0]);
+    second.close();
   });
 
   it("resetDemo restores the seeded state", async () => {

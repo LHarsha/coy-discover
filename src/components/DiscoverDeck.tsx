@@ -30,22 +30,28 @@ export function DiscoverDeck() {
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }, []);
 
-  const load = useCallback(async () => {
-    setStatus("loading");
-    try {
-      setProfiles(await api.feed());
-      setStatus("ready");
-    } catch {
-      setStatus("error");
-    }
-  }, []);
+  const fetchFeed = useCallback(
+    () =>
+      api.feed().then(
+        (list) => {
+          setProfiles(list);
+          setStatus("ready");
+        },
+        () => setStatus("error"),
+      ),
+    [],
+  );
 
+  const load = useCallback(() => {
+    setStatus("loading");
+    return fetchFeed();
+  }, [fetchFeed]);
+
+  // Status starts as "loading", so the first fetch only needs to settle it.
   useEffect(() => {
-    // Initial fetch of the feed when the deck mounts.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    fetchFeed();
     return () => clearTimeout(toastTimer.current);
-  }, [load]);
+  }, [fetchFeed]);
 
   const handleSwiped = useCallback(
     async (profile: PublicProfile, action: SwipeAction) => {
@@ -132,10 +138,10 @@ export function DiscoverDeck() {
 
       {status === "ready" && !empty && (
         <div className="flex items-center justify-center gap-8 pt-4">
-          <ActionButton label="Pass" onClick={() => topCard.current?.swipe("pass")} className="text-rose-500">
+          <ActionButton label="Pass" shortcut="←" onClick={() => topCard.current?.swipe("pass")} className="text-rose-500">
             <path d="M6 6l12 12M18 6 6 18" />
           </ActionButton>
-          <ActionButton label="Like" onClick={() => topCard.current?.swipe("like")} className="text-emerald-500">
+          <ActionButton label="Like" shortcut="→" onClick={() => topCard.current?.swipe("like")} className="text-emerald-500">
             <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
           </ActionButton>
         </div>
@@ -165,11 +171,13 @@ export function DiscoverDeck() {
 
 function ActionButton({
   label,
+  shortcut,
   onClick,
   className,
   children,
 }: {
   label: string;
+  shortcut: string;
   onClick: () => void;
   className: string;
   children: React.ReactNode;
@@ -178,7 +186,7 @@ function ActionButton({
     <button
       type="button"
       aria-label={label}
-      title={`${label} (${label === "Like" ? "→" : "←"})`}
+      title={`${label} (${shortcut})`}
       onClick={onClick}
       className={`flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 transition-transform hover:scale-105 active:scale-90 ${className}`}
     >

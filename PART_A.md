@@ -18,11 +18,19 @@ The free tier has 3 slots. A matched crush shows up on the list with a "Matched"
 
 ## Two features Coy should have
 
-### 1. Talk inside Coy after a match, and keep numbers private until both people choose to share them
+### 1. Hint Drops: let the person who added you leave one anonymous clue
 
-**What:** When two people match, open a simple in-app chat instead of sending them straight to WhatsApp. Each person's phone number stays hidden until they tap "Share my number". The chat has block and report, and an unmatch option that closes it for both sides.
+**What:** After adding a crush, you can attach one hint to the anonymous heads-up they get. Hints come from a fixed list, not free text. For example:
+- "We're at the same college"
+- "We've actually talked"
+- "We met this year"
+- "You'd never guess"
 
-**Why:** Until the match, Coy is careful about privacy. The other person learns that someone likes them and nothing more. Once it's mutual, though, the match card shows the other person's full phone number, and "Say hi" moves the conversation to WhatsApp. That's a big jump: liking each other enough to say so isn't the same as wanting to swap numbers, and a mutual crush can still turn awkward. Once a number is out, it can't be taken back, and Coy has no way to step in if someone gets uncomfortable. An in-app first conversation keeps the "you control what's revealed" promise past the match. It also gives Coy a place for safety tools, and it keeps people in the app at the moment they care most. Right now that moment is handed to another app.
+The person then sees "Someone likes you. Hint: you've actually talked." Each crush gets one hint, sending one is optional, and it can't be changed once sent.
+
+**Why:** Today the heads-up is a dead end for the person who gets it. They know someone likes them but have nothing to go on. Their only move is to guess by adding someone, which uses one of their 3 slots, and a wrong guess wastes it. Many people will just do nothing, so the person who added them never gets a match, even when the feeling is mutual. A hint gives them something to reason from and makes a correct guess much more likely, which turns more heads-ups into matches.
+
+It also fits Coy's promise. The sender stays anonymous and decides how much mystery to keep. Because hints are only picked from a set list, nobody can type something like "it's me from your class" and give themselves away, and a single broad hint can't identify anyone on its own. The product is about the thrill of "who could it be?", and hints lean into that instead of leaving it as a blank.
 
 ### 2. Let a crush expire, so a slot can be freed
 
@@ -30,7 +38,10 @@ The free tier has 3 slots. A matched crush shows up on the list with a "Matched"
 
 **Why:** Right now adding is final, and there are only 3 free slots, with more costing ₹40 to ₹49 each. That makes the first add a high-pressure decision, so people are likely to hold back on the very action the product depends on. Feelings also change. Someone who added an ex or a passing crush months ago is stuck with a slot that will never match, which makes Coy feel less useful over time. A way out lowers the cost of trying, and it gives a dormant user a natural reason to come back and add someone new. The rules above keep the anonymous heads-up meaningful: a stream of add-and-remove cycles can't be used to spam or probe someone.
 
+### How the two fit together
+
+Both target the path from adding someone to a match. Expiring crushes make it cheaper to add someone, so more people take the first step. Hint Drops make it easier for the other side to respond, so more of those first steps end in a match.
+
 ## Smaller things I noticed
 
 - Opening your own invite link while signed in redirects home without any message. A short "This is your invite link, share it with friends" would explain what happened.
-- The full phone number of a match is visible on the home screen. Anyone glancing at the screen can see it, which is one more reason for the first feature.

@@ -25,6 +25,8 @@ The deck shows one card at a time, with the next one tucked behind it. Drag righ
 
 Each swipe gets a short confirmation message. A mutual like opens the "It's a match!" screen. Matches are listed under Discover → Matches, newest first. The deck also has a loading state, an error state with retry, and an empty state for when you've seen everyone.
 
+The styling follows Coy's own app: Bricolage Grotesque, ink outlines with hard offset shadows, and pink and lilac accents. The seed photos are 128px, so cards show them as a round avatar on a dotted panel instead of stretching them full-bleed. Layouts are tuned down to an iPhone SE with Safari's toolbars showing (375×548).
+
 Swipes and matches are stored in SQLite, so they survive reloads and server restarts. A profile you've swiped on never comes back.
 
 ## API

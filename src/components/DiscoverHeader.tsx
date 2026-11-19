@@ -11,9 +11,9 @@ const SEGMENTS = [
 export function DiscoverHeader() {
   const pathname = usePathname();
   return (
-    <header className="flex items-center justify-between px-5 pt-4 pb-3">
-      <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
-      <div className="flex rounded-full bg-black/5 p-1 text-sm font-medium">
+    <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-4 short:pb-2">
+      <h1 className="text-[2rem] leading-tight font-extrabold tracking-[-0.03em] short:text-[1.625rem]">Discover</h1>
+      <div className="flex rounded-full bg-soft p-1 text-[0.875rem] font-bold">
         {SEGMENTS.map((s) => {
           const active = pathname === s.href;
           return (
@@ -21,8 +21,8 @@ export function DiscoverHeader() {
               key={s.href}
               href={s.href}
               aria-current={active ? "page" : undefined}
-              className={`rounded-full px-3.5 py-1.5 transition-colors ${
-                active ? "bg-white text-ink shadow-sm" : "text-black/50 hover:text-black/70"
+              className={`rounded-full border-2 px-3.5 py-1.5 transition-colors ${
+                active ? "border-ink bg-white text-ink" : "border-transparent text-muted hover:text-ink"
               }`}
             >
               {s.label}
@@ -30,6 +30,6 @@ export function DiscoverHeader() {
           );
         })}
       </div>
-    </header>
+    </div>
   );
 }

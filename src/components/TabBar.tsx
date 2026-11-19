@@ -7,9 +7,7 @@ const TABS = [
   {
     href: "/home",
     label: "Home",
-    icon: (
-      <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z" />
-    ),
+    icon: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z" />,
   },
   {
     href: "/discover",
@@ -26,8 +24,8 @@ const TABS = [
 export function TabBar() {
   const pathname = usePathname();
   return (
-    <nav className="border-t border-black/5 bg-white pb-[env(safe-area-inset-bottom)]">
-      <ul className="flex">
+    <nav className="border-t-2 border-line bg-white px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
+      <ul className="flex gap-2">
         {TABS.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (
@@ -35,11 +33,18 @@ export function TabBar() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
-                  active ? "text-brand" : "text-black/40 hover:text-black/60"
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-full text-[0.9375rem] font-bold transition-colors ${
+                  active ? "bg-pink-soft text-ink" : "text-muted hover:bg-soft"
                 }`}
               >
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill={active ? "var(--color-pink)" : "none"}
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinejoin="round"
+                >
                   {tab.icon}
                 </svg>
                 {tab.label}

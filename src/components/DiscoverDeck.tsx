@@ -6,28 +6,30 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "@/lib/api";
 import type { Match, PublicProfile, SwipeAction } from "@/lib/types";
 import { MatchModal } from "./MatchModal";
-import { SwipeCard, type SwipeCardHandle } from "./SwipeCard";
+import { SwipeCard } from "./SwipeCard";
 
 type Status = "loading" | "ready" | "error";
 
-interface Toast {
-  id: number;
-  text: string;
-  tone: "like" | "pass" | "error";
-}
+const STACK_SIZE = 3;
+const TOAST_MS = 1800;
 
 export function DiscoverDeck() {
   const [profiles, setProfiles] = useState<PublicProfile[]>([]);
   const [status, setStatus] = useState<Status>("loading");
+  const [direction, setDirection] = useState(1);
   const [match, setMatch] = useState<Match | null>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
-  const topCard = useRef<SwipeCardHandle>(null);
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const profilesRef = useRef(profiles);
 
-  const showToast = useCallback((text: string, tone: Toast["tone"]) => {
+  useEffect(() => {
+    profilesRef.current = profiles;
+  }, [profiles]);
+
+  const showToast = useCallback((text: string) => {
     clearTimeout(toastTimer.current);
-    setToast({ id: Date.now(), text, tone });
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
+    setToast({ id: Date.now(), text });
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
   }, []);
 
   const fetchFeed = useCallback(
@@ -53,123 +55,118 @@ export function DiscoverDeck() {
     return () => clearTimeout(toastTimer.current);
   }, [fetchFeed]);
 
-  const handleSwiped = useCallback(
+  const save = useCallback(
     async (profile: PublicProfile, action: SwipeAction) => {
-      // The card has already left the screen; remove it now and record the swipe in the background.
-      setProfiles((list) => list.filter((p) => p.id !== profile.id));
       try {
         const result = await api.swipe(profile.id, action);
-        if (result.matched && result.match) {
-          setMatch(result.match);
-        } else {
-          showToast(action === "like" ? `You liked ${profile.name}` : `Passed on ${profile.name}`, action);
-        }
+        if (result.matched && result.match) setMatch(result.match);
+        else showToast(action === "like" ? `Liked ${profile.name}` : `Passed on ${profile.name}`);
       } catch (err) {
         if (err instanceof ApiError && err.code === "already_swiped") return;
         setProfiles((list) => (list.some((p) => p.id === profile.id) ? list : [profile, ...list]));
-        showToast("Couldn't save that swipe. Try again.", "error");
+        showToast("Couldn't save that. Try again.");
       }
     },
     [showToast],
   );
 
+  // The top card leaves the stack immediately, so the next one moves up while the old one
+  // is still flying out; the request runs in the background.
+  const decide = useCallback(
+    (action: SwipeAction) => {
+      const top = profilesRef.current[0];
+      if (!top) return;
+      setDirection(action === "like" ? 1 : -1);
+      setProfiles((list) => list.filter((p) => p.id !== top.id));
+      save(top, action);
+    },
+    [save],
+  );
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (match || e.target instanceof HTMLInputElement) return;
-      if (e.key === "ArrowRight") topCard.current?.swipe("like");
-      if (e.key === "ArrowLeft") topCard.current?.swipe("pass");
+      if (match || e.repeat) return;
+      if (e.key === "ArrowRight") decide("like");
+      if (e.key === "ArrowLeft") decide("pass");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [match]);
+  }, [decide, match]);
 
   const resetDemo = async () => {
     try {
       await api.reset();
       await load();
     } catch {
-      showToast("Reset is not available here.", "error");
+      showToast("Reset isn't available here.");
     }
   };
 
-  const visible = profiles.slice(0, 2);
   const empty = status === "ready" && profiles.length === 0;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-4">
-      <div className="relative min-h-[22rem] flex-1">
-        {status === "loading" && <div className="absolute inset-0 animate-pulse rounded-3xl bg-neutral-200" />}
+    <div className="flex min-h-0 flex-1 flex-col px-5 pb-4">
+      <div className="relative min-h-[21rem] flex-1 short:min-h-[18rem]">
+        {status === "loading" && <div className="dots absolute inset-0 animate-pulse rounded-[26px] border-2 border-line" />}
 
         {status === "error" && (
-          <CenteredMessage title="Couldn't load profiles" body="Check your connection and try again.">
-            <button type="button" onClick={load} className="rounded-full bg-brand px-6 py-2.5 font-semibold text-white">
-              Retry
+          <EmptyCard title="Couldn't load profiles" body="Check your connection and try again.">
+            <button type="button" onClick={load} className="btn">
+              Try again
             </button>
-          </CenteredMessage>
+          </EmptyCard>
         )}
 
         {empty && (
-          <CenteredMessage
-            title="You're all caught up"
-            body="You've seen everyone for now. New people will show up here as they join."
-          >
-            <Link href="/discover/matches" className="rounded-full bg-brand px-6 py-2.5 font-semibold text-white">
+          <EmptyCard title="That's everyone for now" body="New people show up here as they join Coy.">
+            <Link href="/discover/matches" className="btn">
               See your matches
             </Link>
-            <button type="button" onClick={resetDemo} className="text-sm text-black/40 underline underline-offset-2">
+            <button type="button" onClick={resetDemo} className="text-[0.875rem] font-semibold text-muted underline underline-offset-4">
               Reset demo data
             </button>
-          </CenteredMessage>
+          </EmptyCard>
         )}
 
-        {status === "ready" &&
-          visible
-            .map((profile, i) => (
-              <SwipeCard
-                key={profile.id}
-                ref={i === 0 ? topCard : undefined}
-                profile={profile}
-                isTop={i === 0}
-                onSwiped={(action) => handleSwiped(profile, action)}
-              />
-            ))
-            .reverse()}
+        {status === "ready" && (
+          <AnimatePresence custom={direction}>
+            {profiles.slice(0, STACK_SIZE).map((profile, depth) => (
+              <SwipeCard key={profile.id} profile={profile} depth={depth} onDecide={decide} />
+            ))}
+          </AnimatePresence>
+        )}
+
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              key={toast.id}
+              role="status"
+              initial={{ opacity: 0, y: -8, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, y: -8, x: "-50%" }}
+              className="pointer-events-none absolute top-3 left-1/2 z-20 rounded-full border-2 border-ink bg-white px-4 py-1.5 text-[0.875rem] font-bold whitespace-nowrap shadow-[3px_3px_0_var(--color-ink)]"
+            >
+              {toast.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {status === "ready" && !empty && (
-        <div className="flex items-center justify-center gap-8 pt-4">
-          <ActionButton label="Pass" shortcut="←" onClick={() => topCard.current?.swipe("pass")} className="text-rose-500">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </ActionButton>
-          <ActionButton label="Like" shortcut="→" onClick={() => topCard.current?.swipe("like")} className="text-emerald-500">
-            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
-          </ActionButton>
-        </div>
-      )}
-
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key={toast.id}
-            role="status"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            className={`pointer-events-none absolute inset-x-0 bottom-24 z-20 mx-auto w-fit rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg ${
-              toast.tone === "like" ? "bg-emerald-500" : toast.tone === "pass" ? "bg-neutral-800" : "bg-rose-600"
-            }`}
-          >
-            {toast.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className={`relative z-20 flex items-center justify-center gap-10 pt-8 short:pt-5 ${status === "ready" && !empty ? "" : "invisible"}`}>
+        <RoundButton label="Pass" shortcut="←" onClick={() => decide("pass")} className="bg-white">
+          <path d="M7 7l10 10M17 7 7 17" />
+        </RoundButton>
+        <RoundButton label="Like" shortcut="→" onClick={() => decide("like")} className="bg-pink">
+          <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" fill="currentColor" />
+        </RoundButton>
+      </div>
 
       <MatchModal match={match} onClose={() => setMatch(null)} />
     </div>
   );
 }
 
-function ActionButton({
+function RoundButton({
   label,
   shortcut,
   onClick,
@@ -188,20 +185,23 @@ function ActionButton({
       aria-label={label}
       title={`${label} (${shortcut})`}
       onClick={onClick}
-      className={`flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 transition-transform hover:scale-105 active:scale-90 ${className}`}
+      className={`pressable grid h-16 w-16 place-items-center short:h-14 short:w-14 rounded-full border-2 border-ink text-ink shadow-[3px_3px_0_var(--color-ink)] transition-[transform,box-shadow] duration-75 ${className}`}
     >
-      <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
         {children}
       </svg>
     </button>
   );
 }
 
-function CenteredMessage({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
+function EmptyCard({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-black/10 px-8 text-center">
-      <h2 className="text-xl font-bold">{title}</h2>
-      <p className="text-black/55">{body}</p>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[26px] border-2 border-dashed border-line px-8 text-center">
+      <div className="dots grid h-20 w-20 place-items-center rounded-full border-2 border-ink">
+        <span className="h-4 w-4 rounded-full bg-pink" />
+      </div>
+      <h2 className="text-[1.5rem] font-extrabold tracking-[-0.02em]">{title}</h2>
+      <p className="text-muted">{body}</p>
       {children}
     </div>
   );

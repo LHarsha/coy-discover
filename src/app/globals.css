@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
+/* Small phones with the browser toolbar showing (an iPhone SE in Safari is about 375x548). */
+@custom-variant short (@media (max-height: 600px));
+@custom-variant tall (@media (min-height: 760px));
+
+/* Palette and edges follow Coy's own app so the tab feels native next to Home. */
 @theme {
-  --color-brand: #f43f6b;
-  --color-brand-dark: #d92a56;
-  --color-ink: #1f1a24;
+  --font-sans: var(--font-bricolage), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-ink: #15121d;
+  --color-pink: #ff3d81;
+  --color-pink-hover: #ff5a94;
+  --color-pink-soft: #ffe4ef;
+  --color-soft: #f6f4fa;
+  --color-line: #ece9f2;
+  --color-muted: #6d6979;
+  --color-lilac: #e7e0ff;
+  --color-dot: #c9bff0;
 }
 
 html,
@@ -12,9 +24,52 @@ body {
 }
 
 body {
-  background: #f6f2f4;
+  background: var(--color-soft);
   color: var(--color-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 2px solid var(--color-ink);
+    border-radius: 999px;
+    background: var(--color-pink);
+    padding: 0 24px;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    box-shadow: 3px 3px 0 var(--color-ink);
+    transition:
+      transform 80ms,
+      box-shadow 80ms,
+      background-color 150ms;
+  }
+  .btn:hover {
+    background: var(--color-pink-hover);
+  }
+  .btn.quiet {
+    background: #fff;
+  }
+  .btn.quiet:hover {
+    background: var(--color-soft);
+  }
+  .btn:active,
+  .pressable:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--color-ink);
+  }
+
+  .dots {
+    background-color: var(--color-lilac);
+    background-image: radial-gradient(var(--color-dot) 2.5px, transparent 3px);
+    background-size: 22px 22px;
+    background-position: 4px 4px;
+  }
 }

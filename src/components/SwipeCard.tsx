@@ -1,108 +1,112 @@
 "use client";
 
 import Image from "next/image";
-import { animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { useImperativeHandle, useRef, type Ref } from "react";
+import { animate, motion, useMotionValue, useTransform, type PanInfo, type Variants } from "framer-motion";
 import type { PublicProfile, SwipeAction } from "@/lib/types";
-
-export interface SwipeCardHandle {
-  swipe: (action: SwipeAction) => void;
-}
 
 interface Props {
   profile: PublicProfile;
-  isTop: boolean;
-  onSwiped: (action: SwipeAction) => void;
-  ref?: Ref<SwipeCardHandle>;
+  /** 0 is the card on top; 1 and 2 sit behind it (2 is hidden and only there to preload the photo). */
+  depth: number;
+  onDecide: (action: SwipeAction) => void;
 }
 
-const DISTANCE_THRESHOLD = 110;
-const VELOCITY_THRESHOLD = 600;
+const DISTANCE_THRESHOLD = 100;
+const VELOCITY_THRESHOLD = 500;
 
-export function SwipeCard({ profile, isTop, onSwiped, ref }: Props) {
+const variants: Variants = {
+  stack: (depth: number) => ({
+    scale: 1 - depth * 0.04,
+    y: depth * 22,
+    opacity: depth > 1 ? 0 : 1,
+    transition: { type: "spring", stiffness: 380, damping: 32 },
+  }),
+  // AnimatePresence passes the swipe direction (1 = like, -1 = pass) as `custom`.
+  exit: (direction: number) => ({
+    x: direction * (window.innerWidth + 240),
+    opacity: 0.6,
+    transition: { type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.32 },
+  }),
+};
+
+export function SwipeCard({ profile, depth, onDecide }: Props) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
-  const likeOpacity = useTransform(x, [20, DISTANCE_THRESHOLD], [0, 1]);
-  const nopeOpacity = useTransform(x, [-DISTANCE_THRESHOLD, -20], [1, 0]);
-  const leaving = useRef(false);
+  const rotate = useTransform(x, [-260, 0, 260], [-14, 0, 14]);
+  const likeOpacity = useTransform(x, [16, DISTANCE_THRESHOLD], [0, 1]);
+  const nopeOpacity = useTransform(x, [-DISTANCE_THRESHOLD, -16], [1, 0]);
+  const isTop = depth === 0;
 
-  const flyOut = (action: SwipeAction, velocity = 0) => {
-    if (leaving.current) return;
-    leaving.current = true;
-    const target = (action === "like" ? 1 : -1) * (window.innerWidth + 200);
-    animate(x, target, {
-      type: "tween",
-      ease: "easeOut",
-      duration: Math.max(0.2, 0.35 - Math.abs(velocity) / 10000),
-      onComplete: () => onSwiped(action),
-    });
-  };
-
-  useImperativeHandle(ref, () => ({ swipe: (action) => flyOut(action) }));
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const { offset, velocity } = info;
-    if (offset.x > DISTANCE_THRESHOLD || velocity.x > VELOCITY_THRESHOLD) flyOut("like", velocity.x);
-    else if (offset.x < -DISTANCE_THRESHOLD || velocity.x < -VELOCITY_THRESHOLD) flyOut("pass", velocity.x);
-    else animate(x, 0, { type: "spring", stiffness: 500, damping: 30 });
+  const handleDragEnd = (_: unknown, { offset, velocity }: PanInfo) => {
+    if (offset.x > DISTANCE_THRESHOLD || velocity.x > VELOCITY_THRESHOLD) onDecide("like");
+    else if (offset.x < -DISTANCE_THRESHOLD || velocity.x < -VELOCITY_THRESHOLD) onDecide("pass");
+    else animate(x, 0, { type: "spring", stiffness: 520, damping: 34 });
   };
 
   return (
     <motion.article
-      className="absolute inset-0 touch-none overflow-hidden rounded-3xl bg-neutral-200 shadow-xl select-none"
-      style={{ x, rotate, zIndex: isTop ? 2 : 1 }}
-      initial={false}
-      animate={{ scale: isTop ? 1 : 0.94, y: isTop ? 0 : 14 }}
-      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+      className={`absolute inset-0 flex touch-none flex-col overflow-hidden rounded-[26px] border-2 border-ink bg-white select-none ${
+        isTop ? "cursor-grab shadow-[5px_5px_0_var(--color-ink)] active:cursor-grabbing" : "pointer-events-none"
+      }`}
+      style={{ x, rotate, zIndex: 10 - depth }}
+      custom={depth}
+      variants={variants}
+      initial={{ scale: 0.9, y: 28, opacity: 0 }}
+      animate="stack"
+      exit="exit"
       drag={isTop ? "x" : false}
+      dragElastic={0.9}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
-      whileDrag={{ cursor: "grabbing" }}
       aria-hidden={!isTop}
       aria-label={isTop ? `${profile.name}, ${profile.age}` : undefined}
     >
-      <Image
-        src={profile.photoUrl}
-        alt=""
-        fill
-        sizes="(max-width: 448px) 100vw, 448px"
-        className="pointer-events-none object-cover"
-        draggable={false}
-        priority={isTop}
-      />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-5 pt-24 pb-5 text-white">
-        <h2 className="text-3xl font-bold">
-          {profile.name}, <span className="font-normal">{profile.age}</span>
+      <div className="dots relative flex min-h-[6.5rem] flex-1 items-center justify-center border-b-2 border-ink short:min-h-[5rem]">
+        <div className="relative h-32 w-32 overflow-hidden rounded-full border-2 border-ink bg-white shadow-[3px_3px_0_var(--color-ink)] short:h-16 short:w-16 tall:h-40 tall:w-40">
+          <Image
+            src={profile.photoUrl}
+            alt=""
+            fill
+            sizes="160px"
+            unoptimized
+            draggable={false}
+            className="pointer-events-none object-cover"
+          />
+        </div>
+
+        <motion.span
+          style={{ opacity: likeOpacity }}
+          className="absolute top-5 left-5 -rotate-12 rounded-xl border-2 border-ink bg-pink px-3 py-1 text-2xl font-extrabold tracking-wide shadow-[3px_3px_0_var(--color-ink)] short:top-3 short:text-xl"
+        >
+          LIKE
+        </motion.span>
+        <motion.span
+          style={{ opacity: nopeOpacity }}
+          className="absolute top-5 right-5 rotate-12 rounded-xl border-2 border-ink bg-white px-3 py-1 text-2xl font-extrabold tracking-wide shadow-[3px_3px_0_var(--color-ink)] short:top-3 short:text-xl"
+        >
+          NOPE
+        </motion.span>
+      </div>
+
+      <div className="px-5 pt-4 pb-5 short:pt-3 short:pb-4">
+        <h2 className="text-[1.75rem] leading-tight font-extrabold tracking-[-0.02em]">
+          {profile.name}, <span className="font-semibold text-muted">{profile.age}</span>
         </h2>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-white/80">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
+        <p className="mt-1 flex items-center gap-1.5 text-[0.875rem] font-semibold text-muted">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.2}>
             <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
             <circle cx="12" cy="9.5" r="2.5" />
           </svg>
-          {profile.location}
+          <span className="truncate">{profile.location}</span>
         </p>
-        <p className="mt-3 text-[15px] leading-snug">{profile.bio}</p>
+        <p className="mt-3 text-[1rem] leading-snug">{profile.bio}</p>
         <ul className="mt-3 flex flex-wrap gap-1.5">
           {profile.interests.map((interest) => (
-            <li key={interest} className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
+            <li key={interest} className="rounded-full bg-soft px-3 py-1 text-[0.8125rem] font-bold">
               {interest}
             </li>
           ))}
         </ul>
       </div>
-
-      <motion.div
-        style={{ opacity: likeOpacity }}
-        className="absolute top-8 left-6 -rotate-12 rounded-lg border-4 border-emerald-400 px-3 py-1 text-3xl font-extrabold tracking-wider text-emerald-400"
-      >
-        LIKE
-      </motion.div>
-      <motion.div
-        style={{ opacity: nopeOpacity }}
-        className="absolute top-8 right-6 rotate-12 rounded-lg border-4 border-rose-500 px-3 py-1 text-3xl font-extrabold tracking-wider text-rose-500"
-      >
-        NOPE
-      </motion.div>
     </motion.article>
   );
 }

@@ -28,49 +28,50 @@ export function MatchModal({ match, onClose }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="match-title"
-          className="fixed inset-0 z-30 mx-auto flex max-w-md flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-brand to-fuchsia-700 px-8 py-10 text-center text-white"
+          className="fixed inset-0 z-30 mx-auto flex max-w-[480px] flex-col justify-center overflow-y-auto bg-white px-5 py-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, transition: { duration: 0.15 } }}
         >
-          <motion.h2
-            id="match-title"
-            className="text-4xl font-extrabold italic"
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.1 }}
+          <motion.div
+            className="dots mx-auto w-full max-w-[320px] -rotate-2 rounded-[26px] border-2 border-ink px-5 pt-8 pb-6 text-center shadow-[5px_5px_0_var(--color-ink)]"
+            initial={{ scale: 0.8, rotate: -8, opacity: 0 }}
+            animate={{ scale: 1, rotate: -2, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 320, damping: 18 }}
           >
-            It&apos;s a match!
-          </motion.h2>
-          <p className="mt-2 text-white/85">You and {match.profile.name} liked each other.</p>
-
-          <div className="my-10 flex items-center">
-            {[CURRENT_USER.photoUrl, match.profile.photoUrl].map((src, i) => (
-              <motion.div
-                key={src}
-                className={`relative h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-2xl ${i === 1 ? "-ml-6" : ""}`}
-                initial={{ x: i === 0 ? -80 : 80, rotate: i === 0 ? -20 : 20, opacity: 0 }}
-                animate={{ x: 0, rotate: i === 0 ? -6 : 6, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 16, delay: 0.2 }}
-              >
-                <Image src={src} alt={i === 0 ? "You" : match.profile.name} fill sizes="128px" className="object-cover" />
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="flex w-full max-w-xs flex-col gap-3">
-            <Link
-              href="/discover/matches"
-              className="rounded-full bg-white py-3 font-semibold text-brand shadow-lg transition-transform active:scale-95"
+            <div className="flex justify-center">
+              {[CURRENT_USER.photoUrl, match.profile.photoUrl].map((src, i) => (
+                <motion.div
+                  key={src}
+                  className={`relative h-24 w-24 overflow-hidden rounded-full border-2 border-ink bg-white ${i === 1 ? "-ml-4" : ""}`}
+                  initial={{ x: i === 0 ? -40 : 40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1, rotate: i === 0 ? -6 : 6 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.12 }}
+                >
+                  <Image src={src} alt={i === 0 ? "You" : match.profile.name} fill sizes="96px" unoptimized className="object-cover" />
+                </motion.div>
+              ))}
+            </div>
+            <motion.span
+              className="mt-4 inline-block rounded-full border-2 border-ink bg-pink px-3 py-0.5 text-[0.875rem] font-extrabold"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 14, delay: 0.3 }}
             >
+              Matched
+            </motion.span>
+          </motion.div>
+
+          <h2 id="match-title" className="mt-10 text-center text-[2rem] leading-tight font-extrabold tracking-[-0.03em]">
+            It&apos;s a match!
+          </h2>
+          <p className="mt-2 text-center text-muted">You and {match.profile.name} liked each other.</p>
+
+          <div className="mt-8 flex flex-col gap-3">
+            <Link href="/discover/matches" className="btn w-full">
               View matches
             </Link>
-            <button
-              type="button"
-              onClick={onClose}
-              autoFocus
-              className="rounded-full border-2 border-white/70 py-3 font-semibold transition-transform active:scale-95"
-            >
+            <button type="button" onClick={onClose} autoFocus className="btn quiet w-full">
               Keep swiping
             </button>
           </div>

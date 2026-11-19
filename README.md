@@ -4,6 +4,8 @@ A swipe-based Discover tab for Coy, built as a standalone Next.js app. It has a 
 
 The main constraint is Coy's core promise: nobody finds out you liked them unless they liked you back. Most of the design choices below follow from that.
 
+Notes from using the live app, plus two feature suggestions, are in [PART_A.md](PART_A.md).
+
 ## Running it
 
 Requires Node 20+.
